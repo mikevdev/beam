@@ -10,7 +10,7 @@ import BeamCore
 import UniformTypeIdentifiers
 
 /// A custom NSView that prevents window dragging
-private class NonDraggableView: NSView {
+internal class NonDraggableView: NSView {
     override var mouseDownCanMoveWindow: Bool {
         return false
     }
