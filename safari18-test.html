@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safari 18 WebKit Engine Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .pass { background: #d4edda; color: #155724; }
+        .fail { background: #f8d7da; color: #721c24; }
+        .header {
+            background: #007AFF;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .feature-group {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h3 { margin-top: 0; color: #333; }
+        .user-agent { font-family: monospace; background: #f0f0f0; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧪 Safari 18 WebKit Engine Verification</h1>
+        <p>Testing if your Beam browser is using Safari 18's WebKit engine</p>
+    </div>
+
+    <div class="feature-group">
+        <h3>📋 Browser Information</h3>
+        <div class="user-agent" id="userAgent"></div>
+    </div>
+
+    <div class="feature-group">
+        <h3>🆕 Safari 18 JavaScript Features</h3>
+        <div id="jsTests"></div>
+    </div>
+
+    <div class="feature-group">
+        <h3>🎨 Safari 18 CSS Features</h3>
+        <div id="cssTests"></div>
+    </div>
+
+    <div class="feature-group">
+        <h3>🌐 Safari 18 Web APIs</h3>
+        <div id="apiTests"></div>
+    </div>
+
+    <script>
+        // Display user agent
+        document.getElementById('userAgent').textContent = navigator.userAgent;
+
+        function addResult(containerId, testName, passed, details = '') {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = `test-result ${passed ? 'pass' : 'fail'}`;
+            div.innerHTML = `
+                <strong>${testName}</strong>: ${passed ? '✅ PASS' : '❌ FAIL'} 
+                ${details ? `<br><small>${details}</small>` : ''}
+            `;
+            container.appendChild(div);
+        }
+
+        // Test Safari 18 JavaScript Features
+        function testJavaScriptFeatures() {
+            // 1. Array.prototype.with() - New in Safari 18
+            try {
+                const arr = [1, 2, 3];
+                const result = arr.with(1, 99); // Should return [1, 99, 3]
+                addResult('jsTests', 'Array.prototype.with()', 
+                    Array.isArray(result) && result[1] === 99,
+                    'Immutable array update method'
+                );
+            } catch (e) {
+                addResult('jsTests', 'Array.prototype.with()', false, 'Method not supported');
+            }
+
+            // 2. Array.prototype.toSorted() - New in Safari 18
+            try {
+                const arr = [3, 1, 2];
+                const sorted = arr.toSorted();
+                addResult('jsTests', 'Array.prototype.toSorted()', 
+                    Array.isArray(sorted) && sorted[0] === 1 && arr[0] === 3,
+                    'Immutable array sorting'
+                );
+            } catch (e) {
+                addResult('jsTests', 'Array.prototype.toSorted()', false, 'Method not supported');
+            }
+
+            // 3. Array.prototype.toReversed() - New in Safari 18
+            try {
+                const arr = [1, 2, 3];
+                const reversed = arr.toReversed();
+                addResult('jsTests', 'Array.prototype.toReversed()', 
+                    Array.isArray(reversed) && reversed[0] === 3 && arr[0] === 1,
+                    'Immutable array reversal'
+                );
+            } catch (e) {
+                addResult('jsTests', 'Array.prototype.toReversed()', false, 'Method not supported');
+            }
+
+            // 4. Array.prototype.toSpliced() - New in Safari 18
+            try {
+                const arr = [1, 2, 3, 4];
+                const spliced = arr.toSpliced(1, 2, 99);
+                addResult('jsTests', 'Array.prototype.toSpliced()', 
+                    Array.isArray(spliced) && spliced.length === 3 && spliced[1] === 99,
+                    'Immutable array splicing'
+                );
+            } catch (e) {
+                addResult('jsTests', 'Array.prototype.toSpliced()', false, 'Method not supported');
+            }
+
+            // 5. RegExp v flag support - Enhanced in Safari 18
+            try {
+                const regex = new RegExp('[𝒜-𝒵]', 'v');
+                addResult('jsTests', 'RegExp v flag (Unicode Sets)', 
+                    regex.flags.includes('v'),
+                    'Advanced Unicode pattern matching'
+                );
+            } catch (e) {
+                addResult('jsTests', 'RegExp v flag (Unicode Sets)', false, 'Flag not supported');
+            }
+
+            // 6. Array.prototype.findLast() - Available in Safari 18
+            try {
+                const arr = [1, 2, 3, 2];
+                const result = arr.findLast(x => x === 2);
+                addResult('jsTests', 'Array.prototype.findLast()', 
+                    result === 2,
+                    'Find last matching element'
+                );
+            } catch (e) {
+                addResult('jsTests', 'Array.prototype.findLast()', false, 'Method not supported');
+            }
+
+            // 7. Temporal API (Experimental in Safari 18)
+            try {
+                const hasTemporalNow = typeof Temporal !== 'undefined' && typeof Temporal.Now !== 'undefined';
+                addResult('jsTests', 'Temporal API (Experimental)', 
+                    hasTemporalNow,
+                    'Modern date/time API'
+                );
+            } catch (e) {
+                addResult('jsTests', 'Temporal API (Experimental)', false, 'API not available');
+            }
+        }
+
+        // Test Safari 18 CSS Features
+        function testCSSFeatures() {
+            // 1. CSS :has() selector - Major Safari 18 feature
+            const testDiv = document.createElement('div');
+            testDiv.innerHTML = '<p>test</p>';
+            document.body.appendChild(testDiv);
+            
+            try {
+                const hasSupport = CSS.supports('selector(:has(p))');
+                addResult('cssTests', 'CSS :has() selector', 
+                    hasSupport,
+                    'Parent selector based on children'
+                );
+            } catch (e) {
+                addResult('cssTests', 'CSS :has() selector', false, 'Not supported');
+            }
+            
+            document.body.removeChild(testDiv);
+
+            // 2. CSS Container Queries - Enhanced in Safari 18
+            try {
+                const containerSupport = CSS.supports('container-type', 'inline-size');
+                addResult('cssTests', 'CSS Container Queries', 
+                    containerSupport,
+                    'Style based on container dimensions'
+                );
+            } catch (e) {
+                addResult('cssTests', 'CSS Container Queries', false, 'Not supported');
+            }
+
+            // 3. CSS Cascade Layers - Safari 18 feature
+            try {
+                const layerSupport = CSS.supports('@layer');
+                addResult('cssTests', 'CSS Cascade Layers', 
+                    layerSupport,
+                    'Control CSS cascade explicitly'
+                );
+            } catch (e) {
+                addResult('cssTests', 'CSS Cascade Layers', false, 'Not supported');
+            }
+
+            // 4. CSS accent-color - Safari 18
+            try {
+                const accentSupport = CSS.supports('accent-color', 'red');
+                addResult('cssTests', 'CSS accent-color', 
+                    accentSupport,
+                    'Custom form control colors'
+                );
+            } catch (e) {
+                addResult('cssTests', 'CSS accent-color', false, 'Not supported');
+            }
+        }
+
+        // Test Safari 18 Web APIs
+        function testWebAPIs() {
+            // 1. Web Locks API - Safari 18
+            addResult('apiTests', 'Web Locks API', 
+                'locks' in navigator,
+                'Coordinate resource access'
+            );
+
+            // 2. Import Maps - Safari 18
+            addResult('apiTests', 'Import Maps', 
+                HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'),
+                'Control ES module imports'
+            );
+
+            // 3. Web Codecs API - Partial Safari 18
+            addResult('apiTests', 'Web Codecs API', 
+                'VideoEncoder' in window || 'VideoDecoder' in window,
+                'Low-level video/audio processing'
+            );
+
+            // 4. Declarative Shadow DOM - Safari 18
+            const shadowSupport = 'shadowrootmode' in HTMLTemplateElement.prototype;
+            addResult('apiTests', 'Declarative Shadow DOM', 
+                shadowSupport,
+                'Server-side shadow DOM rendering'
+            );
+
+            // 5. Navigation API - Experimental in Safari 18
+            addResult('apiTests', 'Navigation API (Experimental)', 
+                'navigation' in window,
+                'Modern navigation handling'
+            );
+
+            // 6. BroadcastChannel - Available in Safari 18
+            addResult('apiTests', 'BroadcastChannel API', 
+                'BroadcastChannel' in window,
+                'Cross-context messaging'
+            );
+        }
+
+        // Run all tests
+        document.addEventListener('DOMContentLoaded', () => {
+            testJavaScriptFeatures();
+            testCSSFeatures();
+            testWebAPIs();
+        });
+    </script>
+</body>
+</html>

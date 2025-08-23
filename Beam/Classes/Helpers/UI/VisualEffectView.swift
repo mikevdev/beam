@@ -66,8 +66,6 @@ extension VisualEffectView {
 
         init() {
             visualEffectView.blendingMode = .withinWindow
-            // Prevent window dragging when using visual effect views in tab areas
-            visualEffectView.allowsVibrancy = false
         }
 
         func update(material: NSVisualEffectView.Material) {

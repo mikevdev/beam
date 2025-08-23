@@ -9,19 +9,24 @@ import SwiftUI
 import BeamCore
 import UniformTypeIdentifiers
 
+/// A custom NSView that prevents window dragging
+private class NonDraggableView: NSView {
+    override var mouseDownCanMoveWindow: Bool {
+        return false
+    }
+}
+
 /// A view that prevents window background dragging
 struct NonDraggableAreaView: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
+    func makeNSView(context: Context) -> NonDraggableView {
+        let view = NonDraggableView()
         view.wantsLayer = true
         view.layer?.backgroundColor = NSColor.clear.cgColor
-        // Explicitly prevent this view from allowing window dragging
-        view.mouseDownCanMoveWindow = false
         return view
     }
     
-    func updateNSView(_ nsView: NSView, context: Context) {
-        nsView.mouseDownCanMoveWindow = false
+    func updateNSView(_ nsView: NonDraggableView, context: Context) {
+        // No updates needed
     }
 }
 
