@@ -76,6 +76,21 @@ class BeamWebViewConfigurationBase: WKWebViewConfiguration, BeamWebViewConfigura
         preferences.setValue(true, forKey: "developerExtrasEnabled")
         defaultWebpagePreferences.preferredContentMode = .desktop
         defaultWebpagePreferences.allowsContentJavaScript = true
+        
+        // Safari 18 WebKit optimizations
+        if #available(macOS 15.0, *) {
+            // Enable modern WebKit features for Safari 18 compatibility
+            preferences.setValue(true, forKey: "javaScriptCanAccessClipboard")
+            preferences.setValue(true, forKey: "shouldAllowUserInstalledFonts")
+            
+            // Performance optimizations
+            suppressesIncrementalRendering = false
+            mediaTypesRequiringUserActionForPlayback = []
+            
+            // Enhanced security features
+            limitsNavigationsToAppBoundDomains = false
+        }
+        
         #if BEAM_WEBKIT_ENHANCEMENT_ENABLED
         preferences._setAllowsPicture(inPictureMediaPlayback: true)
         preferences._setFullScreenEnabled(true)
