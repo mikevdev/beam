@@ -2,6 +2,15 @@
   "object": {
     "pins": [
       {
+        "package": "async-http-client",
+        "repositoryURL": "https://github.com/swift-server/async-http-client",
+        "state": {
+          "branch": null,
+          "revision": "fc510a39cff61b849bf5cdff17eb2bd6d0777b49",
+          "version": "1.11.5"
+        }
+      },
+      {
         "package": "Socket",
         "repositoryURL": "https://github.com/Kitura/BlueSocket.git",
         "state": {
@@ -17,6 +26,159 @@
           "branch": null,
           "revision": "ae5889d2a8b068d2d3ab91ec73aa8f557c03cd8a",
           "version": "1.0.200"
+        }
+      },
+      {
+        "package": "BrightFutures",
+        "repositoryURL": "https://github.com/Thomvis/BrightFutures.git",
+        "state": {
+          "branch": null,
+          "revision": "fa66fa183dce7196d431244d0215748cd14c5758",
+          "version": "8.2.0"
+        }
+      },
+      {
+        "package": "Chalk",
+        "repositoryURL": "https://github.com/mxcl/Chalk.git",
+        "state": {
+          "branch": null,
+          "revision": "a7f58e47a08ca5a84f73acc4bcf6c2c19d990609",
+          "version": "0.5.0"
+        }
+      },
+      {
+        "package": "Clustering",
+        "repositoryURL": "https://github.com/beamlegacy/Clustering.git",
+        "state": {
+          "branch": "main",
+          "revision": "664c2131d60c1b16e6248fbdfb84acfb2fbeee34",
+          "version": null
+        }
+      },
+      {
+        "package": "CocoaLumberjack",
+        "repositoryURL": "https://github.com/CocoaLumberjack/CocoaLumberjack.git",
+        "state": {
+          "branch": null,
+          "revision": "80ada1f753b0d53d9b57c465936a7c4169375002",
+          "version": "3.7.4"
+        }
+      },
+      {
+        "package": "CwlCatchException",
+        "repositoryURL": "https://github.com/mattgallagher/CwlCatchException.git",
+        "state": {
+          "branch": null,
+          "revision": "07b2ba21d361c223e25e3c1e924288742923f08c",
+          "version": "2.2.1"
+        }
+      },
+      {
+        "package": "CwlPreconditionTesting",
+        "repositoryURL": "https://github.com/mattgallagher/CwlPreconditionTesting.git",
+        "state": {
+          "branch": null,
+          "revision": "0139c665ebb45e6a9fbdb68aabfd7c39f3fe0071",
+          "version": "2.2.2"
+        }
+      },
+      {
+        "package": "Erik",
+        "repositoryURL": "https://github.com/phimage/Erik.git",
+        "state": {
+          "branch": null,
+          "revision": "109a130e9cdb00789a43a7a625293eeb12d22989",
+          "version": "5.1.0"
+        }
+      },
+      {
+        "package": "Fakery",
+        "repositoryURL": "https://github.com/vadymmarkov/Fakery",
+        "state": {
+          "branch": null,
+          "revision": "71cb3bf36a808534659d1248780c2bf3c4c4fc91",
+          "version": "5.1.0"
+        }
+      },
+      {
+        "package": "FaviconFinder",
+        "repositoryURL": "https://github.com/will-lumley/FaviconFinder.git",
+        "state": {
+          "branch": null,
+          "revision": "9279f4371f4877ca302ba3bf1015f3f58ae4a56c",
+          "version": "5.1.4"
+        }
+      },
+      {
+        "package": "FileCheck",
+        "repositoryURL": "https://github.com/llvm-swift/FileCheck.git",
+        "state": {
+          "branch": null,
+          "revision": "f7c5f1a9479b33a876a6f5632ca2b92a7ce4b667",
+          "version": "0.2.6"
+        }
+      },
+      {
+        "package": "FileKit",
+        "repositoryURL": "https://github.com/nvzqz/FileKit.git",
+        "state": {
+          "branch": null,
+          "revision": "9006d2888025fbe893c3c396327b2fe45a8c177b",
+          "version": "6.1.0"
+        }
+      },
+      {
+        "package": "GRDB",
+        "repositoryURL": "https://github.com/groue/GRDB.swift.git",
+        "state": {
+          "branch": null,
+          "revision": "2cf6c756e1e5ef6901ebae16576a7e4e4b834622",
+          "version": "6.29.3"
+        }
+      },
+      {
+        "package": "INI",
+        "repositoryURL": "https://github.com/bouke/ini.git",
+        "state": {
+          "branch": null,
+          "revision": "60b7887c6f4051e5cb76b5faa0a7d6db510ddcb0",
+          "version": "1.2.0"
+        }
+      },
+      {
+        "package": "JJLISO8601DateFormatter",
+        "repositoryURL": "https://github.com/michaeleisel/JJLISO8601DateFormatter",
+        "state": {
+          "branch": null,
+          "revision": "741a9e45db01148a8ac60c5e12f7c978181a22d3",
+          "version": "0.1.8"
+        }
+      },
+      {
+        "package": "JWTDecode",
+        "repositoryURL": "https://github.com/auth0/JWTDecode.swift.git",
+        "state": {
+          "branch": null,
+          "revision": "3cd207fb9e943b6168a117baa3936c823204c2dc",
+          "version": "2.6.3"
+        }
+      },
+      {
+        "package": "Kanna",
+        "repositoryURL": "https://github.com/tid-kijyun/Kanna.git",
+        "state": {
+          "branch": null,
+          "revision": "41c3d28ea0eac07e4551b28def9de1ede702e739",
+          "version": "5.3.0"
+        }
+      },
+      {
+        "package": "KeychainAccess",
+        "repositoryURL": "https://github.com/kishikawakatsumi/KeychainAccess",
+        "state": {
+          "branch": null,
+          "revision": "84e546727d66f1adc5439debad16270d0fdd04e7",
+          "version": "4.2.2"
         }
       },
       {
@@ -65,6 +227,15 @@
         }
       },
       {
+        "package": "LASwift",
+        "repositoryURL": "https://github.com/alexandertar/LASwift",
+        "state": {
+          "branch": null,
+          "revision": "c7adfe775805c05d484b53c497e9f74898a50858",
+          "version": "0.2.6"
+        }
+      },
+      {
         "package": "LoggerAPI",
         "repositoryURL": "https://github.com/Kitura/LoggerAPI.git",
         "state": {
@@ -74,12 +245,66 @@
         }
       },
       {
+        "package": "Lottie",
+        "repositoryURL": "https://github.com/beamlegacy/lottie-ios",
+        "state": {
+          "branch": "master",
+          "revision": "02d45e874cd27615b0a02cf01c028b9956f33d30",
+          "version": null
+        }
+      },
+      {
+        "package": "Macaw",
+        "repositoryURL": "https://github.com/beamlegacy/Macaw/",
+        "state": {
+          "branch": "master",
+          "revision": "f46e715a5dbd68297c6fc6705ccae2433c88b7b9",
+          "version": null
+        }
+      },
+      {
+        "package": "Nimble",
+        "repositoryURL": "https://github.com/Quick/Nimble.git",
+        "state": {
+          "branch": null,
+          "revision": "c93f16c25af5770f0d3e6af27c9634640946b068",
+          "version": "9.2.1"
+        }
+      },
+      {
+        "package": "OAuthSwift",
+        "repositoryURL": "https://github.com/OAuthSwift/OAuthSwift.git",
+        "state": {
+          "branch": "master",
+          "revision": "fe6b6a4ccb0f6fba346a06ae34a75b0733afa70d",
+          "version": null
+        }
+      },
+      {
         "package": "PathKit",
         "repositoryURL": "https://github.com/kylef/PathKit.git",
         "state": {
           "branch": null,
           "revision": "e2f5be30e4c8f531c9c1e8765aa7b71c0a45d7a0",
           "version": "0.9.2"
+        }
+      },
+      {
+        "package": "Punycode",
+        "repositoryURL": "https://github.com/gumob/PunycodeSwift.git",
+        "state": {
+          "branch": null,
+          "revision": "30a462bdb4398ea835a3585472229e0d74b36ba5",
+          "version": "3.0.0"
+        }
+      },
+      {
+        "package": "Quick",
+        "repositoryURL": "https://github.com/Quick/Quick.git",
+        "state": {
+          "branch": null,
+          "revision": "8cce6acd38f965f5baa3167b939f86500314022b",
+          "version": "3.1.2"
         }
       },
       {
@@ -101,6 +326,78 @@
         }
       },
       {
+        "package": "swift-algorithms",
+        "repositoryURL": "https://github.com/apple/swift-algorithms.git",
+        "state": {
+          "branch": null,
+          "revision": "87e50f483c54e6efd60e885f7f5aa946cee68023",
+          "version": "1.2.1"
+        }
+      },
+      {
+        "package": "swift-argument-parser",
+        "repositoryURL": "https://github.com/apple/swift-argument-parser.git",
+        "state": {
+          "branch": null,
+          "revision": "309a47b2b1d9b5e991f36961c983ecec72275be3",
+          "version": "1.6.1"
+        }
+      },
+      {
+        "package": "swift-atomics",
+        "repositoryURL": "https://github.com/apple/swift-atomics.git",
+        "state": {
+          "branch": null,
+          "revision": "b601256eab081c0f92f059e12818ac1d4f178ff7",
+          "version": "1.3.0"
+        }
+      },
+      {
+        "package": "cmark-gfm",
+        "repositoryURL": "https://github.com/swiftlang/swift-cmark.git",
+        "state": {
+          "branch": "gfm",
+          "revision": "cbd8eae0689857c873063f28b9a80419ec718e20",
+          "version": null
+        }
+      },
+      {
+        "package": "swift-collections",
+        "repositoryURL": "https://github.com/apple/swift-collections.git",
+        "state": {
+          "branch": null,
+          "revision": "8c0c0a8b49e080e54e5e328cc552821ff07cd341",
+          "version": "1.2.1"
+        }
+      },
+      {
+        "package": "swift-crypto",
+        "repositoryURL": "https://github.com/apple/swift-crypto.git",
+        "state": {
+          "branch": null,
+          "revision": "60f13f60c4d093691934dc6cfdf5f508ada1f894",
+          "version": "2.6.0"
+        }
+      },
+      {
+        "package": "swift-http-structured-headers",
+        "repositoryURL": "https://github.com/apple/swift-http-structured-headers.git",
+        "state": {
+          "branch": null,
+          "revision": "1625f271afb04375bf48737a5572613248d0e7a0",
+          "version": "1.4.0"
+        }
+      },
+      {
+        "package": "swift-http-types",
+        "repositoryURL": "https://github.com/apple/swift-http-types.git",
+        "state": {
+          "branch": null,
+          "revision": "a0a57e949a8903563aba4615869310c0ebf14c03",
+          "version": "1.4.0"
+        }
+      },
+      {
         "package": "swift-log",
         "repositoryURL": "https://github.com/apple/swift-log.git",
         "state": {
@@ -119,12 +416,165 @@
         }
       },
       {
+        "package": "swift-markdown",
+        "repositoryURL": "https://github.com/apple/swift-markdown.git",
+        "state": {
+          "branch": "main",
+          "revision": "c281baa59e2b0d3ddc72848741217af811f66d39",
+          "version": null
+        }
+      },
+      {
+        "package": "swift-nio",
+        "repositoryURL": "https://github.com/apple/swift-nio.git",
+        "state": {
+          "branch": null,
+          "revision": "1c30f0f2053b654e3d1302492124aa6d242cdba7",
+          "version": "2.86.0"
+        }
+      },
+      {
+        "package": "swift-nio-extras",
+        "repositoryURL": "https://github.com/apple/swift-nio-extras.git",
+        "state": {
+          "branch": null,
+          "revision": "f1f6f772198bee35d99dd145f1513d8581a54f2c",
+          "version": "1.26.0"
+        }
+      },
+      {
+        "package": "swift-nio-http2",
+        "repositoryURL": "https://github.com/apple/swift-nio-http2.git",
+        "state": {
+          "branch": null,
+          "revision": "5e9e99ec96c53bc2c18ddd10c1e25a3cd97c55e5",
+          "version": "1.38.0"
+        }
+      },
+      {
+        "package": "swift-nio-ssl",
+        "repositoryURL": "https://github.com/apple/swift-nio-ssl.git",
+        "state": {
+          "branch": null,
+          "revision": "385f5bd783ffbfff46b246a7db7be8e4f04c53bd",
+          "version": "2.33.0"
+        }
+      },
+      {
+        "package": "swift-nio-transport-services",
+        "repositoryURL": "https://github.com/apple/swift-nio-transport-services.git",
+        "state": {
+          "branch": null,
+          "revision": "e645014baea2ec1c2db564410c51a656cf47c923",
+          "version": "1.25.1"
+        }
+      },
+      {
+        "package": "swift-numerics",
+        "repositoryURL": "https://github.com/apple/swift-numerics.git",
+        "state": {
+          "branch": null,
+          "revision": "e0ec0f5f3af6f3e4d5e7a19d2af26b481acb6ba8",
+          "version": "1.0.3"
+        }
+      },
+      {
+        "package": "swift-system",
+        "repositoryURL": "https://github.com/apple/swift-system.git",
+        "state": {
+          "branch": null,
+          "revision": "890830fff1a577dc83134890c7984020c5f6b43b",
+          "version": "1.6.2"
+        }
+      },
+      {
+        "package": "SwiftCheck",
+        "repositoryURL": "https://github.com/typelift/SwiftCheck",
+        "state": {
+          "branch": null,
+          "revision": "077c096c3ddfc38db223ac8e525ad16ffb987138",
+          "version": "0.12.0"
+        }
+      },
+      {
+        "package": "Swifter",
+        "repositoryURL": "https://github.com/httpswift/swifter.git",
+        "state": {
+          "branch": null,
+          "revision": "9483a5d459b45c3ffd059f7b55f9638e268632fd",
+          "version": "1.5.0"
+        }
+      },
+      {
+        "package": "SwiftSoup",
+        "repositoryURL": "https://github.com/scinfu/SwiftSoup.git",
+        "state": {
+          "branch": null,
+          "revision": "3a439f9eccc391b264d54516ce640251552eb0c4",
+          "version": "2.10.3"
+        }
+      },
+      {
+        "package": "Swime",
+        "repositoryURL": "https://github.com/beamlegacy/Swime",
+        "state": {
+          "branch": "master",
+          "revision": "2dd7e4a252e5aa95a22a45ba37ef186047a77413",
+          "version": null
+        }
+      },
+      {
+        "package": "SWXMLHash",
+        "repositoryURL": "https://github.com/drmohundro/SWXMLHash",
+        "state": {
+          "branch": null,
+          "revision": "6469881a3f30417c5bb02404ea4b69207f297592",
+          "version": "6.0.0"
+        }
+      },
+      {
+        "package": "TLDExtractSwift",
+        "repositoryURL": "https://github.com/gumob/TLDExtractSwift",
+        "state": {
+          "branch": "main",
+          "revision": "c9a0f5d2942516162ab273b736a84c21ada12184",
+          "version": null
+        }
+      },
+      {
         "package": "TypeDecoder",
         "repositoryURL": "https://github.com/Kitura/TypeDecoder.git",
         "state": {
           "branch": null,
           "revision": "28ec01815c0aea9236f92982ca8d351e7112a4a0",
           "version": "1.3.201"
+        }
+      },
+      {
+        "package": "UUIDKit",
+        "repositoryURL": "https://github.com/baarde/uuid-kit",
+        "state": {
+          "branch": null,
+          "revision": "db7e05a70ed2fff63f4ecc64ef61f85f999717d2",
+          "version": "0.2.0"
+        }
+      },
+      {
+        "package": "Vinyl",
+        "repositoryURL": "https://github.com/beamlegacy/Vinyl",
+        "state": {
+          "branch": "master",
+          "revision": "c4d04bc6f1e4be2dbd535fedf8d93efeec8f68d0",
+          "version": null
+        }
+      },
+      {
+        "package": "ZIPFoundation",
+        "repositoryURL": "https://github.com/weichsel/ZIPFoundation",
+        "state": {
+          "branch": null,
+          "revision": "02b6abe5f6eef7e3cbd5f247c5cc24e246efcfe0",
+          "version": "0.9.19"
         }
       }
     ]

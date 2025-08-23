@@ -835,7 +835,7 @@
 		96CCDF3F284A4D880052444E /* BeamNote+BeamDocumentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96CCDF3E284A4D880052444E /* BeamNote+BeamDocumentTests.swift */; };
 		96CD67A62838F48800EA952A /* BeamDatabase+BeamObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96CD67A52838F48800EA952A /* BeamDatabase+BeamObject.swift */; };
 		96CD67AC283900C400EA952A /* BeamDatabaseSynchronizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96CD67AB283900C400EA952A /* BeamDatabaseSynchronizer.swift */; };
-		96D5AE85264C01AD003AD516 /* TLDExtract in Frameworks */ = {isa = PBXBuildFile; productRef = 96D5AE84264C01AD003AD516 /* TLDExtract */; };
+		96D5AE85264C01AD003AD516 /* TLDExtractSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 96D5AE84264C01AD003AD516 /* TLDExtractSwift */; };
 		96D71CEF27FB2F3E0094F54D /* BeamNoteDocumentWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96D71CEE27FB2F3E0094F54D /* BeamNoteDocumentWrapper.swift */; };
 		96D71CFD27FEFED90094F54D /* BeamNoteCollectionWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96D71CFC27FEFED90094F54D /* BeamNoteCollectionWrapper.swift */; };
 		96D71D0527FF575F0094F54D /* BeamNoteDocumentWrapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96D71D0427FF575F0094F54D /* BeamNoteDocumentWrapperTests.swift */; };
@@ -3536,7 +3536,7 @@
 			files = (
 				96C0F72D26FCAE6100385449 /* UUIDKit in Frameworks */,
 				A0A84FC02636FA99008F0326 /* CocoaLumberjackSwift in Frameworks */,
-				96D5AE85264C01AD003AD516 /* TLDExtract in Frameworks */,
+				96D5AE85264C01AD003AD516 /* TLDExtractSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -8338,7 +8338,7 @@
 			name = BeamCore;
 			packageProductDependencies = (
 				96319D52261623BB00D1CF31 /* CocoaLumberjackSwift */,
-				96D5AE84264C01AD003AD516 /* TLDExtract */,
+				96D5AE84264C01AD003AD516 /* TLDExtractSwift */,
 				96C0F72C26FCAE6100385449 /* UUIDKit */,
 			);
 			productName = BeamCore;
@@ -12472,7 +12472,7 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/gumob/TLDExtractSwift";
 			requirement = {
-				branch = master;
+				branch = main;
 				kind = branch;
 			};
 		};
@@ -12612,10 +12612,10 @@
 			package = 96AC99F626E65CFB0016E941 /* XCRemoteSwiftPackageReference "uuid-kit" */;
 			productName = UUIDKit;
 		};
-		96D5AE84264C01AD003AD516 /* TLDExtract */ = {
+		96D5AE84264C01AD003AD516 /* TLDExtractSwift */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 96D5AE83264C01AD003AD516 /* XCRemoteSwiftPackageReference "TLDExtractSwift" */;
-			productName = TLDExtract;
+			productName = TLDExtractSwift;
 		};
 		96DDEE30282C96C900D9101A /* GRDB */ = {
 			isa = XCSwiftPackageProductDependency;
