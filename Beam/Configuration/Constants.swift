@@ -13,5 +13,5 @@ enum Constants {
         return version.majorVersion >= 11 || (version.majorVersion == 10 && version.minorVersion >= 16)
     }()
 
-    static let SafariUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/618.3.11.7.7 (KHTML, like Gecko) Version/18.0 Safari/618.3.11.7.7"
+    static let SafariUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/618.3.11.7.7 (KHTML, like Gecko) Version/18.5 Safari/618.3.11.7.7"
 }
