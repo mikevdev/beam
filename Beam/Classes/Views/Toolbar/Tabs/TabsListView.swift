@@ -9,6 +9,22 @@ import SwiftUI
 import BeamCore
 import UniformTypeIdentifiers
 
+/// A view that prevents window background dragging
+struct NonDraggableAreaView: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        view.wantsLayer = true
+        view.layer?.backgroundColor = NSColor.clear.cgColor
+        // Explicitly prevent this view from allowing window dragging
+        view.mouseDownCanMoveWindow = false
+        return view
+    }
+    
+    func updateNSView(_ nsView: NSView, context: Context) {
+        nsView.mouseDownCanMoveWindow = false
+    }
+}
+
 private class TabsListViewModel: ObservableObject {
     var currentDragDidChangeCurrentTab = false
     var firstDragGestureValue: TabGestureValue?
@@ -411,6 +427,10 @@ struct TabsListView: View {
             .contentShape(
                 // limit the drag gesture space
                 Path(draggableContentPath(geometry: geometry))
+            )
+            .background(
+                // Prevent window dragging in tab area
+                NonDraggableAreaView()
             )
             .simultaneousGesture(
                 // removing the drag gesture completely otherwise it is never stopped by the external drag
