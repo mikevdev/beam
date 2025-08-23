@@ -3,10 +3,9 @@
 //
 
 #import <WebKit/WebKit.h>
-// Commented out RadBlock imports due to missing submodule
-// #import "RadBlockKit.h"
-// #import "RBFilterGroup.h"
-// #import "RBContentBlocker.h"
+#import "RadBlockKit.h"
+#import "RBFilterGroup.h"
+#import "RBContentBlocker.h"
 #import <Foundation/Foundation.h>
 
 #if BEAM_WEBKIT_ENHANCEMENT_ENABLED
