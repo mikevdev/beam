@@ -414,8 +414,8 @@ struct TabsListView: View {
                 // limit the drag gesture space
                 Path(draggableContentPath(geometry: geometry))
             )
-            .simultaneousGesture(
-                // removing the drag gesture completely otherwise it is never stopped by the external drag
+            .gesture(
+                // Use exclusive gesture to prevent window dragging
                 disableDragGesture ? nil :
                     DragGesture(minimumDistance: 1)
                     .onChanged {
