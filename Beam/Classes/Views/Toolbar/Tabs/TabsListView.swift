@@ -9,40 +9,6 @@ import SwiftUI
 import BeamCore
 import UniformTypeIdentifiers
 
-/// A custom NSView that completely prevents window dragging
-internal class TabAreaView: NSView {
-    override var mouseDownCanMoveWindow: Bool {
-        return false
-    }
-    
-    override func mouseDown(with event: NSEvent) {
-        // Don't call super to completely intercept mouse events
-        // This prevents the event from bubbling up to the window's drag handling
-    }
-    
-    override func mouseDragged(with event: NSEvent) {
-        // Don't call super to prevent window dragging
-        // The SwiftUI gesture recognizer will handle this
-    }
-    
-    override var acceptsFirstMouse: Bool {
-        return true
-    }
-}
-
-/// A SwiftUI wrapper for TabAreaView that prevents window dragging
-struct TabAreaBackgroundView: NSViewRepresentable {
-    func makeNSView(context: Context) -> TabAreaView {
-        let view = TabAreaView()
-        view.wantsLayer = true
-        view.layer?.backgroundColor = NSColor.clear.cgColor
-        return view
-    }
-    
-    func updateNSView(_ nsView: TabAreaView, context: Context) {
-        // No updates needed
-    }
-}
 
 
 private class TabsListViewModel: ObservableObject {
@@ -126,7 +92,7 @@ struct TabsListView: View {
     @State private var scrollContentSize: CGFloat = 0
     @State private var draggableTabsAreas: [CGRect] = [] {
         didSet {
-            print("🐛 Tab dragging: Setting undraggableWindowRects to \(draggableTabsAreas)")
+            print("🐛 DEBUG: Setting undraggableWindowRects to \(draggableTabsAreas)")
             windowInfo.undraggableWindowRects = draggableTabsAreas
         }
     }
@@ -448,10 +414,6 @@ struct TabsListView: View {
             .contentShape(
                 // limit the drag gesture space
                 Path(draggableContentPath(geometry: geometry))
-            )
-            .background(
-                // Prevent window dragging in tab area with custom NSView
-                TabAreaBackgroundView()
             )
             .gesture(
                 // Use exclusive gesture to prevent window dragging

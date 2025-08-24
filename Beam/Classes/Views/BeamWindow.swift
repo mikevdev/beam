@@ -517,21 +517,24 @@ class TitleBarViewControllerWithMouseDown: NSTitlebarAccessoryViewController {
 
 extension BeamWindow {
     fileprivate func allowsWindowDragging(with event: NSEvent) -> Bool {
-        print("🐛 Tab dragging: Mouse event at \(event.locationInWindow), rects: \(windowInfo.undraggableWindowRects)")
         if state.mode == .web && state.omniboxInfo.isFocused && state.omniboxInfo.wasFocusedFromTab, let searchField = self.firstResponder as? BeamTextFieldViewFieldEditor {
             let omniboxFrame = omniboxFrameFromSearchField(searchField)
             return !omniboxFrame.contains(event.locationInWindow)
-        } else if state.mode == .web && !windowInfo.undraggableWindowRects.isEmpty &&
-                    windowInfo.undraggableWindowRects.contains(where: {
-                        let eventPoint = event.locationInWindow.flippedPointToTopLeftOrigin(in: self)
-                        let contains = $0.contains(eventPoint)
-                        if contains {
-                            print("🐛 Tab dragging: Event at \(eventPoint) is in undraggable rect \($0) - preventing window drag")
-                        }
-                        return contains
-                    }) {
-            print("🐛 Tab dragging: Preventing window drag")
-            return false
+        } else if state.mode == .web && !windowInfo.undraggableWindowRects.isEmpty {
+            let eventPoint = event.locationInWindow.flippedPointToTopLeftOrigin(in: self)
+            print("🐛 DEBUG: Mouse at \(event.locationInWindow), flipped to \(eventPoint)")
+            print("🐛 DEBUG: Undraggable rects: \(windowInfo.undraggableWindowRects)")
+            let shouldPrevent = windowInfo.undraggableWindowRects.contains(where: { rect in
+                let contains = rect.contains(eventPoint)
+                if contains {
+                    print("🐛 DEBUG: Hit! Rect \(rect) contains point \(eventPoint)")
+                }
+                return contains
+            })
+            if shouldPrevent {
+                print("🐛 DEBUG: PREVENTING window drag")
+                return false
+            }
         }
         return true
     }
