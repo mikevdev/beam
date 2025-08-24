@@ -688,7 +688,7 @@ extension BrowserTabsManager {
         updateListItems()
     }
 
-    private func gatherTabsInGroupTogether(_ group: TabGroup) {
+    func gatherTabsInGroupTogether(_ group: TabGroup) {
         let tabsInGroup = tabsIds(inGroup: group)
         var tabsIndexToMove = IndexSet()
         tabs.enumerated().forEach { (index, tab) in
