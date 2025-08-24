@@ -468,40 +468,46 @@ struct TabsListView: View {
 extension TabsListView {
     private func updateDraggableTabsAreas(with geometry: GeometryProxy?, tabsSections: TabsListItemsSections,
                                           widthProvider: TabsListWidthProvider, singleTabFrame: CGRect? = nil, lastItemFrame: CGRect? = nil) {
-        guard let geometry = geometry else {
+        guard let geometry = geometry, let window = windowInfo.window else {
             draggableTabsAreas = []
             return
         }
-        var globalFrame = geometry.safeTopLeftGlobalFrame(in: nil)
-        globalFrame.origin.y = 12
-        globalFrame.size.height = TabView.height
+        // Use window-relative coordinates to match BeamWindow's coordinate system
+        var windowFrame = geometry.safeTopLeftGlobalFrame(in: window)
+        windowFrame.origin.y = 12
+        windowFrame.size.height = TabView.height
 
         var areas: [CGRect] = []
         var pinnedFrame: CGRect = .zero
         if tabsSections.pinnedItems.count > 0 {
-            pinnedFrame = globalFrame
+            pinnedFrame = windowFrame
             pinnedFrame.size.width = widthProvider.widthForAllPinnedItems(pinnedItemsCount: tabsSections.pinnedItems.count,
                                                                           includeSpaceBetweenPinnedAndOther: false)
             areas.append(pinnedFrame)
         }
         if tabsSections.unpinnedItems.count == 1, let singleTabFrame = singleTabFrame {
-            areas.append(singleTabFrame)
+            // Convert single tab frame to window coordinates if needed
+            var windowTabFrame = singleTabFrame
+            if window != nil {
+                // singleTabFrame should already be in window coordinates
+                areas.append(windowTabFrame)
+            }
         } else if tabsSections.unpinnedItems.count != 0 {
             if tabsSections.unpinnedItems.contains(where: { $0.isATab }) {
                 if let lastItemFrame = lastItemFrame {
-                    var frame = globalFrame
-                    frame.size.width = lastItemFrame.maxX - globalFrame.minX
+                    var frame = windowFrame
+                    frame.size.width = lastItemFrame.maxX - windowFrame.minX
                     areas = [frame]
                 } else {
-                    areas = [globalFrame]
+                    areas = [windowFrame]
                 }
             } else {
                 let itemsWidth = tabsSections.unpinnedItems.reduce(0, { partialResult, item in
                     return partialResult + widthProvider.width(forItem: item, selected: false, pinned: false)
                 })
                 let pinnedMaxX = pinnedFrame.maxX + (pinnedFrame != .zero ? widthProvider.separatorBetweenPinnedAndOther : 0)
-                let itemsMinX = max(globalFrame.minX, pinnedMaxX)
-                let itemsArea = CGRect(x: itemsMinX, y: globalFrame.minY, width: itemsWidth, height: globalFrame.height)
+                let itemsMinX = max(windowFrame.minX, pinnedMaxX)
+                let itemsArea = CGRect(x: itemsMinX, y: windowFrame.minY, width: itemsWidth, height: windowFrame.height)
                 areas.append(itemsArea)
             }
         }
