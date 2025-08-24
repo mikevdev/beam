@@ -9,10 +9,20 @@ import SwiftUI
 import BeamCore
 import UniformTypeIdentifiers
 
-/// A custom NSView that prevents window dragging
+/// A custom NSView that prevents window dragging but allows tab dragging gestures
 internal class NonDraggableView: NSView {
     override var mouseDownCanMoveWindow: Bool {
         return false
+    }
+    
+    override func mouseDown(with event: NSEvent) {
+        // Allow the event to pass through to the SwiftUI drag gesture
+        super.mouseDown(with: event)
+    }
+    
+    override func mouseDragged(with event: NSEvent) {
+        // Allow dragging events to pass through for tab reordering
+        super.mouseDragged(with: event)
     }
 }
 
@@ -22,6 +32,7 @@ struct NonDraggableAreaView: NSViewRepresentable {
         let view = NonDraggableView()
         view.wantsLayer = true
         view.layer?.backgroundColor = NSColor.clear.cgColor
+        // Allow hit testing to pass through to SwiftUI views above
         return view
     }
     
