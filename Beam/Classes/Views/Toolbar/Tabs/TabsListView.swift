@@ -92,7 +92,6 @@ struct TabsListView: View {
     @State private var scrollContentSize: CGFloat = 0
     @State private var draggableTabsAreas: [CGRect] = [] {
         didSet {
-            print("🐛 DEBUG: Setting undraggableWindowRects to \(draggableTabsAreas)")
             windowInfo.undraggableWindowRects = draggableTabsAreas
         }
     }
@@ -415,8 +414,8 @@ struct TabsListView: View {
                 // limit the drag gesture space
                 Path(draggableContentPath(geometry: geometry))
             )
-            .gesture(
-                // Use exclusive gesture to prevent window dragging
+            .simultaneousGesture(
+                // Allow tab dragging while preventing window dragging via coordinate system
                 disableDragGesture ? nil :
                     DragGesture(minimumDistance: 1)
                     .onChanged {
@@ -474,8 +473,14 @@ extension TabsListView {
             draggableTabsAreas = []
             return
         }
-        // Use window-relative coordinates to match BeamWindow's coordinate system
-        var windowFrame = geometry.safeTopLeftGlobalFrame(in: window)
+        // Convert SwiftUI global coordinates to window coordinates
+        let globalFrame = geometry.frame(in: .global)
+        let windowContentFrame = window.contentView?.frame ?? window.frame
+        var windowFrame = globalFrame
+        // Convert from screen coordinates to window coordinates
+        let screenPoint = CGPoint(x: globalFrame.origin.x, y: globalFrame.origin.y)
+        let windowPoint = window.convertPoint(fromScreen: screenPoint)
+        windowFrame.origin = windowPoint
         windowFrame.origin.y = 12
         windowFrame.size.height = TabView.height
 

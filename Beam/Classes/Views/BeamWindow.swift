@@ -521,19 +521,10 @@ extension BeamWindow {
             let omniboxFrame = omniboxFrameFromSearchField(searchField)
             return !omniboxFrame.contains(event.locationInWindow)
         } else if state.mode == .web && !windowInfo.undraggableWindowRects.isEmpty {
-            let eventPoint = event.locationInWindow.flippedPointToTopLeftOrigin(in: self)
-            print("🐛 DEBUG: Mouse at \(event.locationInWindow), flipped to \(eventPoint)")
-            print("🐛 DEBUG: Undraggable rects: \(windowInfo.undraggableWindowRects)")
-            let shouldPrevent = windowInfo.undraggableWindowRects.contains(where: { rect in
-                let contains = rect.contains(eventPoint)
-                if contains {
-                    print("🐛 DEBUG: Hit! Rect \(rect) contains point \(eventPoint)")
-                }
-                return contains
-            })
-            if shouldPrevent {
-                print("🐛 DEBUG: PREVENTING window drag")
-                return false
+            // Use event.locationInWindow directly - undraggableWindowRects should be in window coordinates
+            let eventPoint = event.locationInWindow
+            return !windowInfo.undraggableWindowRects.contains { rect in
+                rect.contains(eventPoint)
             }
         }
         return true
