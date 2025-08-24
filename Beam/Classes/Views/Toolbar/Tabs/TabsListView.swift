@@ -91,6 +91,7 @@ struct TabsListView: View {
     @State private var scrollContentSize: CGFloat = 0
     @State private var draggableTabsAreas: [CGRect] = [] {
         didSet {
+            print("🐛 Tab dragging: Setting undraggableWindowRects to \(draggableTabsAreas)")
             windowInfo.undraggableWindowRects = draggableTabsAreas
         }
     }
