@@ -505,13 +505,28 @@ extension BeamWindow: NSWindowDelegate {
 class TitleBarViewControllerWithMouseDown: NSTitlebarAccessoryViewController {
 
     override func mouseDown(with event: NSEvent) {
-        if (self.view.window as? BeamWindow)?.allowsWindowDragging(with: event) != false {
+        let allowsDragging = (self.view.window as? BeamWindow)?.allowsWindowDragging(with: event) != false
+        print("🐛 DEBUG: TitleBar mouseDown - allowsDragging: \(allowsDragging)")
+        
+        if allowsDragging {
+            print("🐛 DEBUG: TitleBar calling super.mouseDown()")
             super.mouseDown(with: event)
+        } else {
+            print("🐛 DEBUG: TitleBar NOT calling super.mouseDown()")
         }
-        // NSTitlebarAccessoryViewController steal mouseDown events
-        // But we need them for the view placed below the title bar
-        // See touch down state of toolbar buttons
-        self.parent?.mouseDown(with: event)
+        
+        // Only forward to parent if we're allowing dragging, or if we're in a tab area but need touch events
+        if allowsDragging {
+            print("🐛 DEBUG: TitleBar forwarding to parent (dragging allowed)")
+            // NSTitlebarAccessoryViewController steal mouseDown events
+            // But we need them for the view placed below the title bar
+            // See touch down state of toolbar buttons
+            self.parent?.mouseDown(with: event)
+        } else {
+            print("🐛 DEBUG: TitleBar NOT forwarding to parent (would cause window drag)")
+            // Still need to forward for SwiftUI gesture recognition, but in a controlled way
+            // The SwiftUI views should handle the drag gesture directly
+        }
     }
 }
 
