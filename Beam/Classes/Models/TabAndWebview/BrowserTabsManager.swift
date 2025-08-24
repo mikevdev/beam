@@ -472,9 +472,16 @@ extension BrowserTabsManager {
             }
         }
         if destinationGroup != movedItem.group {
-            moveTabToGroup(tab.id, group: destinationGroup)
+            let originalGroup = movedItem.group
+            moveTabToGroup(tab.id, group: destinationGroup, reorderInList: true)
+            // Also gather the original group if tab was moved out of it
+            if let originalGroup = originalGroup {
+                gatherTabsInGroupTogether(originalGroup)
+            }
         } else if let destinationGroup = destinationGroup, let pageId = tab.pageId {
             tabGroupingManager.pageWasMovedInsideSameGroup(pageId: pageId, group: destinationGroup)
+            // When moving within the same group, still gather to prevent splitting
+            gatherTabsInGroupTogether(destinationGroup)
         }
     }
 
