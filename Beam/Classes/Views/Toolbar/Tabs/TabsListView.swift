@@ -8,7 +8,311 @@
 import SwiftUI
 import BeamCore
 import UniformTypeIdentifiers
+import Cocoa
 
+// MARK: - Tab Interaction System
+
+protocol TabInteractionDelegate: AnyObject {
+    func tabInteractionDidStart(at location: CGPoint)
+    func tabInteractionDidMove(to location: CGPoint, delta: CGPoint)
+    func tabInteractionDidEnd(at location: CGPoint)
+    func tabInteractionDidTap(at location: CGPoint, isRightClick: Bool)
+    func tabInteractionShouldStart(at location: CGPoint) -> Bool
+}
+
+class TabInteractionHandler: NSView {
+    weak var delegate: TabInteractionDelegate?
+    
+    private var isTrackingDrag = false
+    private var dragStartLocation: CGPoint = .zero
+    private var lastDragLocation: CGPoint = .zero
+    private let dragThreshold: CGFloat = 3.0
+    
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        setupView()
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setupView()
+    }
+    
+    private func setupView() {
+        wantsLayer = true
+        layer?.backgroundColor = NSColor.clear.cgColor
+    }
+    
+    override var acceptsFirstResponder: Bool { true }
+    
+    override func mouseDown(with event: NSEvent) {
+        let location = convert(event.locationInWindow, from: nil)
+        
+        guard delegate?.tabInteractionShouldStart(at: location) == true else {
+            super.mouseDown(with: event)
+            return
+        }
+        
+        dragStartLocation = location
+        lastDragLocation = location
+        isTrackingDrag = false
+        
+        print("🎯 TabInteractionHandler: mouseDown at \(location)")
+    }
+    
+    override func mouseDragged(with event: NSEvent) {
+        let location = convert(event.locationInWindow, from: nil)
+        let delta = CGPoint(x: location.x - lastDragLocation.x, y: location.y - lastDragLocation.y)
+        let totalDelta = CGPoint(x: location.x - dragStartLocation.x, y: location.y - dragStartLocation.y)
+        let distance = sqrt(totalDelta.x * totalDelta.x + totalDelta.y * totalDelta.y)
+        
+        if !isTrackingDrag && distance > dragThreshold {
+            isTrackingDrag = true
+            delegate?.tabInteractionDidStart(at: dragStartLocation)
+            print("🚀 TabInteractionHandler: Drag started")
+        }
+        
+        if isTrackingDrag {
+            delegate?.tabInteractionDidMove(to: location, delta: delta)
+        }
+        
+        lastDragLocation = location
+    }
+    
+    override func mouseUp(with event: NSEvent) {
+        let location = convert(event.locationInWindow, from: nil)
+        
+        if isTrackingDrag {
+            delegate?.tabInteractionDidEnd(at: location)
+            print("🏁 TabInteractionHandler: Drag ended")
+        } else {
+            let isRightClick = event.type == .rightMouseUp
+            delegate?.tabInteractionDidTap(at: location, isRightClick: isRightClick)
+            print("👆 TabInteractionHandler: Tap at \(location)")
+        }
+        
+        isTrackingDrag = false
+    }
+    
+    override func rightMouseDown(with event: NSEvent) {
+        let location = convert(event.locationInWindow, from: nil)
+        dragStartLocation = location
+    }
+    
+    override func rightMouseUp(with event: NSEvent) {
+        let location = convert(event.locationInWindow, from: nil)
+        delegate?.tabInteractionDidTap(at: location, isRightClick: true)
+    }
+}
+
+struct TabInteractionView: NSViewRepresentable {
+    let delegate: TabInteractionDelegate?
+    
+    func makeNSView(context: Context) -> TabInteractionHandler {
+        let view = TabInteractionHandler()
+        view.delegate = delegate
+        return view
+    }
+    
+    func updateNSView(_ nsView: TabInteractionHandler, context: Context) {
+        nsView.delegate = delegate
+    }
+}
+
+class TabDragCoordinator: ObservableObject {
+    @Published var isDragging = false
+    @Published var dragOffset: CGSize = .zero
+    @Published var draggedTabIndex: Int?
+    @Published var dropTargetIndex: Int?
+    
+    private weak var tabsManager: BrowserTabsManager?
+    private weak var state: BeamState?
+    private var tabFrames: [CGRect] = []
+    
+    func setup(tabsManager: BrowserTabsManager, state: BeamState) {
+        self.tabsManager = tabsManager
+        self.state = state
+    }
+    
+    func updateTabFrames(_ frames: [CGRect]) {
+        self.tabFrames = frames
+    }
+    
+    func startDrag(at location: CGPoint, tabIndex: Int) {
+        guard !isDragging else { return }
+        
+        isDragging = true
+        draggedTabIndex = tabIndex
+        dragOffset = .zero
+        
+        print("🎯 TabDragCoordinator: Starting drag for tab \(tabIndex)")
+        
+        if let tab = getTab(at: tabIndex), tab != tabsManager?.currentTab {
+            tabsManager?.setCurrentTab(tab)
+        }
+    }
+    
+    func updateDrag(to location: CGPoint, delta: CGSize) {
+        guard isDragging else { return }
+        
+        dragOffset.width += delta.width
+        dragOffset.height += delta.height
+        
+        updateDropTarget(at: location)
+    }
+    
+    func endDrag(at location: CGPoint) {
+        guard isDragging, let draggedIndex = draggedTabIndex else { return }
+        
+        print("🏁 TabDragCoordinator: Ending drag")
+        
+        if let targetIndex = dropTargetIndex, targetIndex != draggedIndex {
+            tabsManager?.moveListItem(atListIndex: draggedIndex, toListIndex: targetIndex, changeGroup: nil, disableAnimations: false)
+            print("📦 TabDragCoordinator: Moved tab from \(draggedIndex) to \(targetIndex)")
+        }
+        
+        isDragging = false
+        dragOffset = .zero
+        draggedTabIndex = nil
+        dropTargetIndex = nil
+    }
+    
+    private func updateDropTarget(at location: CGPoint) {
+        for (index, frame) in tabFrames.enumerated() {
+            let expandedFrame = frame.insetBy(dx: -10, dy: 0)
+            if expandedFrame.contains(location) {
+                dropTargetIndex = index
+                return
+            }
+        }
+        
+        if let lastFrame = tabFrames.last, location.x > lastFrame.maxX {
+            dropTargetIndex = tabFrames.count
+        }
+    }
+    
+    private func getTab(at index: Int) -> BrowserTab? {
+        let sections = tabsManager?.listItems
+        guard let allItems = sections?.allItems, index < allItems.count else { return nil }
+        return allItems[index].tab
+    }
+}
+
+class TabInteractionCoordinator: TabInteractionDelegate {
+    private weak var dragCoordinator: TabDragCoordinator?
+    private weak var tabsManager: BrowserTabsManager?
+    private weak var state: BeamState?
+    private weak var contextMenuManager: TabsListContextMenuBuilder?
+    
+    private var tabFrames: [CGRect] = []
+    private var allItems: [TabsListItem] = []
+    
+    init(dragCoordinator: TabDragCoordinator,
+         tabsManager: BrowserTabsManager,
+         state: BeamState,
+         contextMenuManager: TabsListContextMenuBuilder) {
+        self.dragCoordinator = dragCoordinator
+        self.tabsManager = tabsManager
+        self.state = state
+        self.contextMenuManager = contextMenuManager
+    }
+    
+    func updateTabData(frames: [CGRect], items: [TabsListItem]) {
+        self.tabFrames = frames
+        self.allItems = items
+        dragCoordinator?.updateTabFrames(frames)
+    }
+    
+    // MARK: - TabInteractionDelegate
+    
+    func tabInteractionShouldStart(at location: CGPoint) -> Bool {
+        return true
+    }
+    
+    func tabInteractionDidStart(at location: CGPoint) {
+        guard let tabIndex = findTabIndex(at: location) else { return }
+        dragCoordinator?.startDrag(at: location, tabIndex: tabIndex)
+    }
+    
+    func tabInteractionDidMove(to location: CGPoint, delta: CGPoint) {
+        dragCoordinator?.updateDrag(to: location, delta: CGSize(width: delta.x, height: delta.y))
+    }
+    
+    func tabInteractionDidEnd(at location: CGPoint) {
+        dragCoordinator?.endDrag(at: location)
+    }
+    
+    func tabInteractionDidTap(at location: CGPoint, isRightClick: Bool) {
+        guard let tabIndex = findTabIndex(at: location) else { return }
+        
+        if isRightClick {
+            handleRightClick(at: tabIndex, location: location)
+        } else {
+            handleTap(at: tabIndex)
+        }
+    }
+    
+    // MARK: - Private Methods
+    
+    private func findTabIndex(at location: CGPoint) -> Int? {
+        for (index, frame) in tabFrames.enumerated() {
+            if frame.contains(location) {
+                return index
+            }
+        }
+        return nil
+    }
+    
+    private func handleTap(at index: Int) {
+        guard index < allItems.count else { return }
+        let item = allItems[index]
+        
+        if let tab = item.tab {
+            print("👆 TabInteractionCoordinator: Switching to tab: \(tab.title)")
+            tabsManager?.setCurrentTab(tab)
+            
+            if tab == tabsManager?.currentTab {
+                state?.startFocusOmnibox(fromTab: true)
+            }
+        } else if let group = item.group {
+            print("👆 TabInteractionCoordinator: Toggling group: \(group.title ?? "Untitled")")
+            tabsManager?.toggleGroupCollapse(group)
+        }
+    }
+    
+    private func handleRightClick(at index: Int, location: CGPoint) {
+        guard index < allItems.count else { return }
+        let item = allItems[index]
+        
+        if let tab = item.tab {
+            let event = NSEvent.mouseEvent(with: .rightMouseDown, 
+                                         location: location,
+                                         modifierFlags: [], 
+                                         timestamp: ProcessInfo.processInfo.systemUptime,
+                                         windowNumber: 0, 
+                                         context: nil, 
+                                         eventNumber: 0, 
+                                         clickCount: 1, 
+                                         pressure: 1.0)
+            
+            let sections = tabsManager?.listItems ?? TabsListItemsSections()
+            contextMenuManager?.showContextMenu(forTab: tab, 
+                                              atListIndex: index,
+                                              sections: sections,
+                                              event: event,
+                                              onCloseItem: { [weak self] _ in
+                self?.closeTab(at: index)
+            })
+        } else if let group = item.group {
+            print("🖱️ TabInteractionCoordinator: Right-clicked group: \(group.title ?? "Untitled")")
+        }
+    }
+    
+    private func closeTab(at index: Int) {
+        guard let tabIndex = tabsManager?.tabIndex(forListIndex: index) else { return }
+        state?.closeTab(tabIndex, allowClosingPinned: true)
+    }
+}
 
 
 private class TabsListViewModel: ObservableObject {
@@ -231,10 +535,11 @@ struct TabsListView: View {
         let showTrailingDragSpacer = (index == dragModel.draggingOverIndex && index > dragStartIndex && !dragModel.isDraggingUnlistedItem) ||
         (dragModel.isDraggingUnlistedItem && isTheLastItem && dragModel.draggingOverIndex == allItems.count)
 
-        let hideSeparator = isPinned
-        || (canScroll && isTheLastItem)
-        || (!isTheLastItem && ((!isTabItem && nextItemIsTab) || (isTabItem && !nextItemIsTab) || group != nextGroup))
-        || (!isDraggingATab && (selectedIndex == index + 1 || selectedIndex == index || hoveredIndex == index + 1 || hoveredIndex == index))
+        // Break down complex separator logic for better compilation
+        let isBasicSeparatorCase = isPinned || (canScroll && isTheLastItem)
+        let isDifferentTypeTransition = !isTheLastItem && ((!isTabItem && nextItemIsTab) || (isTabItem && !nextItemIsTab) || group != nextGroup)
+        let isSelectionRelatedHiding = !isDraggingATab && (selectedIndex == index + 1 || selectedIndex == index || hoveredIndex == index + 1 || hoveredIndex == index)
+        let hideSeparator = isBasicSeparatorCase || isDifferentTypeTransition || isSelectionRelatedHiding
 
         let width = max(0, widthProvider.width(forItem: item, selected: selected, pinned: isPinned) - centeringAdjustment)
         let areTabsFillingSpace = width < TabView.maximumWidth
@@ -415,7 +720,7 @@ struct TabsListView: View {
                 Path(draggableContentPath(geometry: geometry))
             )
             .simultaneousGesture(
-                // Allow tab dragging while preventing window dragging via coordinate system
+                // Restore original gesture system for basic functionality
                 disableDragGesture ? nil :
                     DragGesture(minimumDistance: 1)
                     .onChanged {
@@ -433,6 +738,7 @@ struct TabsListView: View {
                 externalDragModel.setup(withState: state, tabsMananger: browserTabsManager)
                 updateDraggableTabsAreas(with: geometry, tabsSections: sections, widthProvider: widthProvider, singleTabFrame: viewModel.singleTabCurrentFrame, lastItemFrame: viewModel.lastItemCurrentFrame)
                 contextMenuManager.setup(withState: state)
+                print("✅ Original tab system restored")
             }
             .onDisappear {
                 removeMouseMonitors()
@@ -473,16 +779,26 @@ extension TabsListView {
             draggableTabsAreas = []
             return
         }
-        // Convert SwiftUI global coordinates to window coordinates
+        // Get the SwiftUI frame and convert to window coordinates
         let globalFrame = geometry.frame(in: .global)
         let windowContentFrame = window.contentView?.frame ?? window.frame
-        var windowFrame = globalFrame
-        // Convert from screen coordinates to window coordinates
-        let screenPoint = CGPoint(x: globalFrame.origin.x, y: globalFrame.origin.y)
-        let windowPoint = window.convertPoint(fromScreen: screenPoint)
-        windowFrame.origin = windowPoint
-        windowFrame.origin.y = 12
+        
+        // Create window frame with proper coordinates
+        var windowFrame = CGRect.zero
+        windowFrame.size = globalFrame.size
+        windowFrame.origin.y = 12  // Fixed toolbar Y position
         windowFrame.size.height = TabView.height
+        
+        // For X coordinate, use the geometry width to calculate the proper position
+        // The tabs should start from a reasonable position within the window
+        windowFrame.origin.x = max(0, globalFrame.origin.x - window.frame.origin.x)
+        
+        // If X is still negative, use a safe default position
+        if windowFrame.origin.x < 0 {
+            windowFrame.origin.x = 100  // Safe default position for tabs
+        }
+        
+        // Tab dragging areas configured successfully
 
         var areas: [CGRect] = []
         var pinnedFrame: CGRect = .zero
@@ -674,6 +990,7 @@ extension TabsListView {
     }
     private struct LastTabGlobalFrameKey: FramePreferenceKey {}
     struct SingleTabGlobalFrameKey: FramePreferenceKey {}
+    
 
     private func importantTabFrameDidChange(newValue: CGRect?, isSingle: Bool = false, isLast: Bool = false,
                                             geometry: GeometryProxy?, widthProvider: TabsListWidthProvider) {

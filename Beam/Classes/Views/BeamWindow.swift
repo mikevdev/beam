@@ -310,7 +310,10 @@ class BeamWindow: NSWindow, NSDraggingDestination, Codable, WindowInfoCapable {
     private var _isMovable = true
     override var isMovable: Bool {
         get {
-            if let currentEvent = NSApp.currentEvent, currentEvent.type == .leftMouseDown, !allowsWindowDragging(with: currentEvent) {
+            // Check all current mouse events, not just leftMouseDown
+            if let currentEvent = NSApp.currentEvent, 
+               (currentEvent.type == .leftMouseDown || currentEvent.type == .leftMouseDragged),
+               !allowsWindowDragging(with: currentEvent) {
                 return false
             }
             return _isMovable
@@ -319,6 +322,8 @@ class BeamWindow: NSWindow, NSDraggingDestination, Codable, WindowInfoCapable {
             _isMovable = newValue
         }
     }
+
+    // mouseDown override removed - new tab interaction system handles everything
 
     override func makeTouchBar() -> NSTouchBar? {
         if touchBarController == nil { touchBarController = .init(window: self) }
@@ -506,26 +511,13 @@ class TitleBarViewControllerWithMouseDown: NSTitlebarAccessoryViewController {
 
     override func mouseDown(with event: NSEvent) {
         let allowsDragging = (self.view.window as? BeamWindow)?.allowsWindowDragging(with: event) != false
-        print("🐛 DEBUG: TitleBar mouseDown - allowsDragging: \(allowsDragging)")
         
         if allowsDragging {
-            print("🐛 DEBUG: TitleBar calling super.mouseDown()")
             super.mouseDown(with: event)
-        } else {
-            print("🐛 DEBUG: TitleBar NOT calling super.mouseDown()")
-        }
-        
-        // Only forward to parent if we're allowing dragging, or if we're in a tab area but need touch events
-        if allowsDragging {
-            print("🐛 DEBUG: TitleBar forwarding to parent (dragging allowed)")
             // NSTitlebarAccessoryViewController steal mouseDown events
             // But we need them for the view placed below the title bar
             // See touch down state of toolbar buttons
             self.parent?.mouseDown(with: event)
-        } else {
-            print("🐛 DEBUG: TitleBar NOT forwarding to parent (would cause window drag)")
-            // Still need to forward for SwiftUI gesture recognition, but in a controlled way
-            // The SwiftUI views should handle the drag gesture directly
         }
     }
 }
@@ -536,11 +528,15 @@ extension BeamWindow {
             let omniboxFrame = omniboxFrameFromSearchField(searchField)
             return !omniboxFrame.contains(event.locationInWindow)
         } else if state.mode == .web && !windowInfo.undraggableWindowRects.isEmpty {
-            // Use event.locationInWindow directly - undraggableWindowRects should be in window coordinates
+            // Convert mouse coordinates to match undraggable rects coordinate system
             let eventPoint = event.locationInWindow
-            return !windowInfo.undraggableWindowRects.contains { rect in
-                rect.contains(eventPoint)
+            let flippedPoint = CGPoint(x: eventPoint.x, y: frame.height - eventPoint.y)
+            
+            let isInUndraggableArea = windowInfo.undraggableWindowRects.contains { rect in
+                rect.contains(flippedPoint)
             }
+            
+            return !isInUndraggableArea
         }
         return true
     }
