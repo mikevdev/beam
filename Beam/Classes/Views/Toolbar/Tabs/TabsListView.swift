@@ -380,6 +380,785 @@ struct TabsListItemsSections {
     var unpinnedItems: [TabsListItem] = []
 }
 
+// MARK: - Modern Tab System (Inline Implementation)
+
+// MARK: - Tab Theme
+struct ModernTabTheme {
+    static let tabHeight: CGFloat = 32
+    static let tabMinWidth: CGFloat = 120
+    static let tabMaxWidth: CGFloat = 260
+    static let tabCornerRadius: CGFloat = 8
+    static let tabSpacing: CGFloat = 2
+    static let closeButtonSize: CGFloat = 16
+    
+    struct Colors {
+        static let activeBackground = Color(NSColor.controlBackgroundColor)
+        static let activeBorder = Color(NSColor.separatorColor)
+        static let activeText = Color(NSColor.controlTextColor)
+        
+        static let inactiveBackground = Color(NSColor.controlBackgroundColor).opacity(0.6)
+        static let inactiveBorder = Color(NSColor.separatorColor).opacity(0.5)
+        static let inactiveText = Color(NSColor.secondaryLabelColor)
+        
+        static let hoverBackground = Color(NSColor.controlBackgroundColor).opacity(0.8)
+        static let hoverBorder = Color(NSColor.separatorColor).opacity(0.7)
+        
+        static let closeButtonNormal = Color(NSColor.tertiaryLabelColor)
+        static let closeButtonHover = Color(NSColor.controlTextColor)
+        static let closeButtonBackground = Color(NSColor.quaternaryLabelColor).opacity(0.5)
+        
+        static let groupColors: [Color] = [
+            .blue, .green, .orange, .purple, .pink, .red, .yellow, .gray
+        ]
+    }
+    
+    struct Animations {
+        static let tabHover = Animation.easeInOut(duration: 0.15)
+        static let tabSelection = Animation.easeInOut(duration: 0.2)
+        static let closeButton = Animation.easeInOut(duration: 0.1)
+        static let groupCollapse = Animation.easeInOut(duration: 0.3)
+    }
+    
+    struct Shadows {
+        static let activeTab = Color.black.opacity(0.1)
+        static let tabBar = Color.black.opacity(0.05)
+    }
+}
+
+enum TabVisualState {
+    case active
+    case inactive
+    case hover
+    
+    var backgroundColor: Color {
+        switch self {
+        case .active: return ModernTabTheme.Colors.activeBackground
+        case .inactive: return ModernTabTheme.Colors.inactiveBackground
+        case .hover: return ModernTabTheme.Colors.hoverBackground
+        }
+    }
+    
+    var borderColor: Color {
+        switch self {
+        case .active: return ModernTabTheme.Colors.activeBorder
+        case .inactive: return ModernTabTheme.Colors.inactiveBorder
+        case .hover: return ModernTabTheme.Colors.hoverBorder
+        }
+    }
+    
+    var textColor: Color {
+        switch self {
+        case .active: return ModernTabTheme.Colors.activeText
+        case .inactive, .hover: return ModernTabTheme.Colors.inactiveText
+        }
+    }
+}
+
+// MARK: - Tab Controller
+@MainActor
+class TabBarControllerInline: ObservableObject {
+    @Published var hoveredTabID: UUID?
+    @Published var draggedTabID: UUID?
+    @Published var isDragging = false
+    @Published var dragOffset: CGSize = .zero
+    
+    private weak var browserTabsManager: BrowserTabsManager?
+    private weak var state: BeamState?
+    
+    func setup(browserTabsManager: BrowserTabsManager, state: BeamState) {
+        self.browserTabsManager = browserTabsManager
+        self.state = state
+    }
+    
+    var tabs: [BrowserTab] {
+        browserTabsManager?.tabs ?? []
+    }
+    
+    var currentTab: BrowserTab? {
+        browserTabsManager?.currentTab
+    }
+    
+    var tabGroups: [TabGroup] {
+        let groups = browserTabsManager?.listItems.allItems.compactMap { $0.group } ?? []
+        return Array(Set(groups.map { $0.id })).compactMap { id in
+            groups.first { $0.id == id }
+        }
+    }
+    
+    func selectTab(_ tab: BrowserTab) {
+        print("🎯 ModernTab: Selecting tab - \(tab.title)")
+        browserTabsManager?.setCurrentTab(tab)
+        
+        if tab == currentTab {
+            state?.startFocusOmnibox(fromTab: true)
+        }
+    }
+    
+    func closeTab(_ tab: BrowserTab) {
+        print("❌ ModernTab: Closing tab - \(tab.title)")
+        if let tabIndex = tabs.firstIndex(of: tab) {
+            state?.closeTab(tabIndex, allowClosingPinned: true)
+        }
+    }
+    
+    func pinTab(_ tab: BrowserTab) {
+        print("📌 ModernTab: Pinning tab - \(tab.title)")
+        browserTabsManager?.pinTab(tab)
+    }
+    
+    func unpinTab(_ tab: BrowserTab) {
+        print("📌 ModernTab: Unpinning tab - \(tab.title)")
+        browserTabsManager?.unpinTab(tab)
+    }
+    
+    func toggleGroup(_ group: TabGroup) {
+        let groupTitle = group.title ?? "Untitled Group"
+        print("ModernTab: Toggling group - \(groupTitle)")
+        browserTabsManager?.toggleGroupCollapse(group)
+    }
+    
+    func getGroupForTab(_ tab: BrowserTab) -> TabGroup? {
+        let currentId = tab.browsingTree.current.id
+        let originId = tab.browsingTree.origin.rootId
+        
+        for group in tabGroups {
+            for pageId in group.pageIds {
+                if pageId == currentId || (originId != nil && pageId == originId!) {
+                    return group
+                }
+            }
+        }
+        return nil
+    }
+    
+    func getGroupColor(_ group: TabGroup) -> Color {
+        if let color = group.color, let nsColor = color.mainColor?.nsColor {
+            return Color(nsColor: nsColor)
+        }
+        let colorIndex = abs(group.id.hashValue) % ModernTabTheme.Colors.groupColors.count
+        return ModernTabTheme.Colors.groupColors[colorIndex]
+    }
+    
+    func setHovered(_ tab: BrowserTab?) {
+        hoveredTabID = tab?.id
+    }
+    
+    func isHovered(_ tab: BrowserTab) -> Bool {
+        hoveredTabID == tab.id
+    }
+    
+    func startDrag(_ tab: BrowserTab) {
+        guard !isDragging else { return }
+        print("🚀 ModernTab: Starting drag for - \(tab.title)")
+        
+        draggedTabID = tab.id
+        isDragging = true
+        dragOffset = .zero
+        
+        selectTab(tab)
+    }
+    
+    func updateDrag(offset: CGSize) {
+        guard isDragging else { return }
+        dragOffset = offset
+    }
+    
+    func endDrag() {
+        guard isDragging else { return }
+        print("🏁 ModernTab: Ending drag")
+        
+        draggedTabID = nil
+        isDragging = false
+        dragOffset = .zero
+    }
+    
+    func moveTab(from sourceIndex: Int, to destinationIndex: Int) {
+        guard sourceIndex != destinationIndex,
+              sourceIndex >= 0, sourceIndex < tabs.count,
+              destinationIndex >= 0, destinationIndex <= tabs.count else { return }
+        
+        print("📦 ModernTab: Moving tab from \(sourceIndex) to \(destinationIndex)")
+        browserTabsManager?.moveListItem(atListIndex: sourceIndex, toListIndex: destinationIndex, changeGroup: nil, disableAnimations: false)
+    }
+    
+    func isActive(_ tab: BrowserTab) -> Bool {
+        currentTab?.id == tab.id
+    }
+    
+    func shouldShowCloseButton(_ tab: BrowserTab) -> Bool {
+        isHovered(tab) || isActive(tab) || tabs.count == 1
+    }
+}
+
+// MARK: - Custom Tab Shape
+struct TabShapeInline: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        
+        let cornerRadius = ModernTabTheme.tabCornerRadius
+        let rect = rect
+        
+        path.move(to: CGPoint(x: 0, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: cornerRadius))
+        
+        path.addArc(
+            center: CGPoint(x: rect.maxX - cornerRadius, y: cornerRadius),
+            radius: cornerRadius,
+            startAngle: .zero,
+            endAngle: .init(radians: -Double.pi / 2),
+            clockwise: true
+        )
+        
+        path.addLine(to: CGPoint(x: cornerRadius, y: 0))
+        
+        path.addArc(
+            center: CGPoint(x: cornerRadius, y: cornerRadius),
+            radius: cornerRadius,
+            startAngle: .init(radians: -Double.pi / 2),
+            endAngle: .init(radians: Double.pi),
+            clockwise: true
+        )
+        
+        path.addLine(to: CGPoint(x: 0, y: rect.maxY))
+        
+        return path
+    }
+}
+
+// MARK: - Modern Tab Component
+struct ModernTabInline: View {
+    let tab: BrowserTab
+    let isActive: Bool
+    let isHovered: Bool
+    let isDragged: Bool
+    let showCloseButton: Bool
+    let group: TabGroup?
+    let groupColor: Color?
+    
+    let onTap: () -> Void
+    let onClose: () -> Void
+    let onHover: (Bool) -> Void
+    let onDragChanged: (DragGesture.Value) -> Void
+    let onDragEnded: (DragGesture.Value) -> Void
+    
+    @State private var isCloseHovered = false
+    
+    private var visualState: TabVisualState {
+        if isActive { return .active }
+        if isHovered { return .hover }
+        return .inactive
+    }
+    
+    private var tabWidth: CGFloat {
+        let baseWidth = ModernTabTheme.tabMinWidth
+        let maxWidth = ModernTabTheme.tabMaxWidth
+        return min(maxWidth, max(baseWidth, baseWidth + CGFloat(tab.title.count) * 2))
+    }
+    
+    var body: some View {
+        HStack(spacing: 6) {
+            faviconView
+            titleView
+            Spacer(minLength: 0)
+            
+            if showCloseButton {
+                closeButtonView
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .frame(width: tabWidth, height: ModernTabTheme.tabHeight)
+        .background(tabBackground)
+        .overlay(tabBorder)
+        .overlay(groupIndicator, alignment: .bottom)
+        .clipShape(TabShapeInline())
+        .shadow(
+            color: isActive ? ModernTabTheme.Shadows.activeTab : .clear,
+            radius: 2, x: 0, y: 1
+        )
+        .scaleEffect(isDragged ? 1.05 : 1.0)
+        .zIndex(isActive ? 2 : (isHovered ? 1 : 0))
+        .animation(ModernTabTheme.Animations.tabHover, value: isHovered)
+        .animation(ModernTabTheme.Animations.tabSelection, value: isActive)
+        .onTapGesture {
+            withAnimation(ModernTabTheme.Animations.tabSelection) {
+                onTap()
+            }
+        }
+        .onHover { hovering in
+            withAnimation(ModernTabTheme.Animations.tabHover) {
+                onHover(hovering)
+            }
+        }
+        .gesture(
+            DragGesture(minimumDistance: 5)
+                .onChanged(onDragChanged)
+                .onEnded(onDragEnded)
+        )
+        .contextMenu {
+            contextMenuContent
+        }
+    }
+    
+    @ViewBuilder
+    private var faviconView: some View {
+        if let favIcon = tab.favIcon {
+            Image(nsImage: favIcon)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 16, height: 16)
+        } else {
+            Image(systemName: "globe")
+                .foregroundColor(visualState.textColor.opacity(0.7))
+                .frame(width: 16, height: 16)
+        }
+    }
+    
+    private var titleView: some View {
+        Text(tab.title.isEmpty ? "New Tab" : tab.title)
+            .font(.system(size: 12, weight: .medium))
+            .foregroundColor(visualState.textColor)
+            .lineLimit(1)
+            .truncationMode(.tail)
+    }
+    
+    private var closeButtonView: some View {
+        Button(action: onClose) {
+            Image(systemName: "xmark")
+                .font(.system(size: 8, weight: .semibold))
+                .foregroundColor(
+                    isCloseHovered 
+                    ? ModernTabTheme.Colors.closeButtonHover 
+                    : ModernTabTheme.Colors.closeButtonNormal
+                )
+                .frame(width: ModernTabTheme.closeButtonSize, height: ModernTabTheme.closeButtonSize)
+                .background(
+                    Circle()
+                        .fill(
+                            isCloseHovered 
+                            ? ModernTabTheme.Colors.closeButtonBackground 
+                            : Color.clear
+                        )
+                )
+        }
+        .buttonStyle(PlainButtonStyle())
+        .onHover { hovering in
+            withAnimation(ModernTabTheme.Animations.closeButton) {
+                isCloseHovered = hovering
+            }
+        }
+    }
+    
+    private var tabBackground: some View {
+        RoundedRectangle(cornerRadius: ModernTabTheme.tabCornerRadius)
+            .fill(
+                LinearGradient(
+                    colors: [
+                        visualState.backgroundColor,
+                        visualState.backgroundColor.opacity(0.9)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+    }
+    
+    private var tabBorder: some View {
+        RoundedRectangle(cornerRadius: ModernTabTheme.tabCornerRadius)
+            .stroke(visualState.borderColor, lineWidth: 0.5)
+    }
+    
+    private var groupIndicator: some View {
+        Group {
+            if let groupColor = groupColor {
+                Rectangle()
+                    .fill(groupColor)
+                    .frame(height: 2)
+                    .padding(.horizontal, 8)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var contextMenuContent: some View {
+        Button("Close Tab", action: onClose)
+        
+        Divider()
+        
+        Button(tab.isPinned ? "Unpin Tab" : "Pin Tab") {
+            // Handle pin/unpin
+        }
+        
+        Button("Duplicate Tab") {
+            // Handle duplicate
+        }
+        
+        Button("Close Other Tabs") {
+            // Handle close others
+        }
+    }
+}
+
+// MARK: - Tab Group Component
+struct ModernTabGroupInline: View {
+    let group: TabGroup
+    let color: Color
+    let isCollapsed: Bool
+    let tabCount: Int
+    
+    let onToggle: () -> Void
+    let onTap: () -> Void
+    
+    @State private var isHovered = false
+    
+    private var groupWidth: CGFloat {
+        isCollapsed ? 120 : 40
+    }
+    
+    var body: some View {
+        HStack(spacing: 6) {
+            groupIndicator
+            
+            if !isCollapsed {
+                titleView
+                Spacer(minLength: 0)
+                countBadge
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .frame(width: groupWidth, height: ModernTabTheme.tabHeight - 4)
+        .background(groupBackground)
+        .overlay(groupBorder)
+        .clipShape(RoundedRectangle(cornerRadius: ModernTabTheme.tabCornerRadius - 2))
+        .scaleEffect(isHovered ? 1.02 : 1.0)
+        .animation(ModernTabTheme.Animations.tabHover, value: isHovered)
+        .animation(ModernTabTheme.Animations.groupCollapse, value: isCollapsed)
+        .onTapGesture {
+            if isCollapsed {
+                onToggle()
+            } else {
+                onTap()
+            }
+        }
+        .onHover { hovering in
+            withAnimation(ModernTabTheme.Animations.tabHover) {
+                isHovered = hovering
+            }
+        }
+        .contextMenu {
+            contextMenuContent
+        }
+    }
+    
+    private var groupIndicator: some View {
+        Circle()
+            .fill(color)
+            .frame(width: 8, height: 8)
+            .overlay(
+                Circle()
+                    .stroke(color.opacity(0.3), lineWidth: 1)
+            )
+    }
+    
+    private var titleView: some View {
+        Text(group.title ?? "Untitled Group")
+            .font(.system(size: 11, weight: .medium))
+            .foregroundColor(Color(NSColor.secondaryLabelColor))
+            .lineLimit(1)
+            .truncationMode(.tail)
+    }
+    
+    private var countBadge: some View {
+        Text("\(tabCount)")
+            .font(.system(size: 9, weight: .semibold))
+            .foregroundColor(.white)
+            .padding(.horizontal, 4)
+            .padding(.vertical, 2)
+            .background(
+                Capsule()
+                    .fill(color.opacity(0.8))
+            )
+    }
+    
+    private var groupBackground: some View {
+        RoundedRectangle(cornerRadius: ModernTabTheme.tabCornerRadius - 2)
+            .fill(
+                LinearGradient(
+                    colors: [
+                        color.opacity(isHovered ? 0.15 : 0.08),
+                        color.opacity(isHovered ? 0.12 : 0.05)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+    }
+    
+    private var groupBorder: some View {
+        RoundedRectangle(cornerRadius: ModernTabTheme.tabCornerRadius - 2)
+            .stroke(color.opacity(0.3), lineWidth: 0.5)
+    }
+    
+    @ViewBuilder
+    private var contextMenuContent: some View {
+        Button(isCollapsed ? "Expand Group" : "Collapse Group", action: onToggle)
+        
+        Divider()
+        
+        Button("Rename Group") {
+            // Handle rename
+        }
+        
+        Button("Change Color") {
+            // Handle color change
+        }
+        
+        Divider()
+        
+        Button("Close Group Tabs") {
+            // Handle close all tabs in group
+        }
+        
+        Button("Remove from Group") {
+            // Handle remove from group
+        }
+    }
+}
+
+// MARK: - Group Tab Divider
+struct GroupTabDividerInline: View {
+    let color: Color
+    let height: CGFloat = ModernTabTheme.tabHeight - 8
+    
+    var body: some View {
+        Rectangle()
+            .fill(
+                LinearGradient(
+                    colors: [
+                        color.opacity(0.3),
+                        color.opacity(0.6),
+                        color.opacity(0.3)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .frame(width: 1, height: height)
+    }
+}
+
+// MARK: - Main Tab Bar
+struct ModernTabBarInline: View {
+    @StateObject private var controller = TabBarControllerInline()
+    @EnvironmentObject var browserTabsManager: BrowserTabsManager
+    @EnvironmentObject var state: BeamState
+    @EnvironmentObject var windowInfo: BeamWindowInfo
+    
+    @State private var scrollOffset: CGFloat = 0
+    @State private var scrollContentSize: CGFloat = 0
+    
+    var body: some View {
+        GeometryReader { geometry in
+            ScrollViewReader { scrollProxy in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    LazyHStack(spacing: ModernTabTheme.tabSpacing) {
+                        tabContent
+                    }
+                    .padding(.horizontal, 8)
+                    .background(
+                        GeometryReader { contentGeometry in
+                            Color.clear.onAppear {
+                                scrollContentSize = contentGeometry.size.width
+                            }
+                        }
+                    )
+                }
+                .background(tabBarBackground)
+                .overlay(tabBarBorder, alignment: .bottom)
+                .frame(height: ModernTabTheme.tabHeight + 8)
+                .clipped()
+                .onAppear {
+                    controller.setup(browserTabsManager: browserTabsManager, state: state)
+                    setupWindowDragPrevention(geometry: geometry)
+                }
+                .onChange(of: controller.currentTab?.id) { _ in
+                    scrollToActiveTab(scrollProxy: scrollProxy)
+                }
+            }
+        }
+        .frame(height: ModernTabTheme.tabHeight + 8)
+    }
+    
+    @ViewBuilder
+    private var tabContent: some View {
+        ForEach(organizedTabs, id: \.id) { item in
+            switch item {
+            case .tab(let tab, let group, let groupColor):
+                tabView(for: tab, group: group, groupColor: groupColor)
+                
+            case .groupDivider(let color):
+                GroupTabDividerInline(color: color)
+                
+            case .groupHeader(let group, let color, let tabCount, let isCollapsed):
+                ModernTabGroupInline(
+                    group: group,
+                    color: color,
+                    isCollapsed: isCollapsed,
+                    tabCount: tabCount,
+                    onToggle: { controller.toggleGroup(group) },
+                    onTap: { /* Handle group tap */ }
+                )
+            }
+        }
+    }
+    
+    private func tabView(for tab: BrowserTab, group: TabGroup?, groupColor: Color?) -> some View {
+        ModernTabInline(
+            tab: tab,
+            isActive: controller.isActive(tab),
+            isHovered: controller.isHovered(tab),
+            isDragged: controller.draggedTabID == tab.id,
+            showCloseButton: controller.shouldShowCloseButton(tab),
+            group: group,
+            groupColor: groupColor,
+            onTap: { controller.selectTab(tab) },
+            onClose: { controller.closeTab(tab) },
+            onHover: { hovering in
+                controller.setHovered(hovering ? tab : nil)
+            },
+            onDragChanged: { gesture in
+                if !controller.isDragging {
+                    controller.startDrag(tab)
+                }
+                controller.updateDrag(offset: gesture.translation)
+            },
+            onDragEnded: { gesture in
+                handleDragEnd(for: tab, gesture: gesture)
+                controller.endDrag()
+            }
+        )
+        .id(tab.id)
+    }
+    
+    enum TabItemInline {
+        case tab(BrowserTab, group: TabGroup?, groupColor: Color?)
+        case groupDivider(Color)
+        case groupHeader(TabGroup, color: Color, tabCount: Int, isCollapsed: Bool)
+    }
+    
+    private var organizedTabs: [TabItemInline] {
+        var items: [TabItemInline] = []
+        var processedGroups: Set<UUID> = []
+        
+        for tab in controller.tabs {
+            let group = controller.getGroupForTab(tab)
+            
+            if let group = group, !processedGroups.contains(group.id) {
+                processedGroups.insert(group.id)
+                
+                let groupColor = controller.getGroupColor(group)
+                let tabsInGroup = controller.tabs.filter { 
+                    controller.getGroupForTab($0)?.id == group.id 
+                }
+                
+                items.append(.groupHeader(
+                    group,
+                    color: groupColor,
+                    tabCount: tabsInGroup.count,
+                    isCollapsed: group.collapsed
+                ))
+                
+                items.append(.groupDivider(groupColor))
+                
+                if !group.collapsed {
+                    for tabInGroup in tabsInGroup {
+                        items.append(.tab(tabInGroup, group: group, groupColor: groupColor))
+                    }
+                }
+                
+                items.append(.groupDivider(groupColor))
+            }
+            else if group == nil {
+                items.append(.tab(tab, group: nil, groupColor: nil))
+            }
+        }
+        
+        return items
+    }
+    
+    private var tabBarBackground: some View {
+        Rectangle()
+            .fill(
+                LinearGradient(
+                    colors: [
+                        Color(NSColor.windowBackgroundColor),
+                        Color(NSColor.windowBackgroundColor).opacity(0.95)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+    }
+    
+    private var tabBarBorder: some View {
+        Rectangle()
+            .fill(Color(NSColor.separatorColor))
+            .frame(height: 0.5)
+    }
+    
+    private func handleDragEnd(for tab: BrowserTab, gesture: DragGesture.Value) {
+        let dragDistance = gesture.translation.width
+        guard abs(dragDistance) > 20 else { return }
+        
+        if let currentIndex = controller.tabs.firstIndex(of: tab) {
+            let tabWidth = ModernTabTheme.tabMinWidth + ModernTabTheme.tabSpacing
+            let positionChange = Int(dragDistance / tabWidth)
+            let newIndex = max(0, min(controller.tabs.count - 1, currentIndex + positionChange))
+            
+            if newIndex != currentIndex {
+                controller.moveTab(from: currentIndex, to: newIndex)
+            }
+        }
+    }
+    
+    private func scrollToActiveTab(scrollProxy: ScrollViewProxy) {
+        if let activeTab = controller.currentTab {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                scrollProxy.scrollTo(activeTab.id, anchor: .center)
+            }
+        }
+    }
+    
+    private func setupWindowDragPrevention(geometry: GeometryProxy) {
+        let frame = geometry.frame(in: .global)
+        let tabBarRect = CGRect(
+            x: frame.origin.x,
+            y: frame.origin.y,
+            width: frame.width,
+            height: ModernTabTheme.tabHeight + 8
+        )
+        
+        DispatchQueue.main.async {
+            windowInfo.undraggableWindowRects = [tabBarRect]
+        }
+    }
+}
+
+extension ModernTabBarInline.TabItemInline: Identifiable {
+    var id: String {
+        switch self {
+        case .tab(let tab, _, _):
+            return "tab-\(tab.id.uuidString)"
+        case .groupDivider(let color):
+            return "divider-\(color.description)"
+        case .groupHeader(let group, _, _, _):
+            return "group-\(group.id.uuidString)"
+        }
+    }
+}
+
 struct TabsListView: View {
     @EnvironmentObject var state: BeamState
     @EnvironmentObject var browserTabsManager: BrowserTabsManager
@@ -641,132 +1420,7 @@ struct TabsListView: View {
     }
 
     var body: some View {
-        GeometryReader { geometry in
-            let widthProvider = widthProvider(for: geometry, sections: sections)
-            let selectedIndex = selectedIndex
-            let hasSingleOtherTab = sections.unpinnedItems.count == 1 && sections.unpinnedItems.first?.isATab == true
-            let tabsShouldScroll = !widthProvider.hasEnoughSpaceForAllTabs
-            let hasUnpinnedTabs = sections.unpinnedItems.contains { $0.isATab }
-            ZStack(alignment: .leading) {
-                HStack(spacing: 0) {
-                    // Fixed Pinned Tabs
-                    HStack(spacing: 0) {
-                        let pinnedItems = sections.pinnedItems
-                        ForEach(Array(pinnedItems.enumerated()), id: \.1.id) { (index, item) in
-                            renderItem(item, index: index, selectedIndex: selectedIndex, isSingle: false,
-                                       canScroll: tabsShouldScroll, widthProvider: widthProvider)
-                        }
-                        if pinnedItems.count > 0 {
-                            separator
-                                .padding(.leading, 6)
-                                .padding(.trailing, 4)
-                                .opacity(shouldShowSectionSeparator(tabsSections: sections) ? 1 : 0)
-                        }
-                    }
-                    // Scrollable Tabs
-                    GeometryReader { scrollContainerProxy in
-                        let singleTabCenteringAdjustment = hasSingleOtherTab ? calculateSingleTabAdjustment(scrollContainerProxy) : 0
-                        TrackableScrollView(tabsShouldScroll ? .horizontal : .init(), showIndicators: false, contentOffset: $scrollOffset, contentSize: $scrollContentSize) {
-                            ScrollViewReader { scrollproxy in
-                                HStack(spacing: 0) {
-                                    let otherItems = sections.unpinnedItems
-                                    let startIndex = sections.pinnedItems.count
-                                    ForEach(Array(otherItems.enumerated()), id: \.1.id) { (index, item) in
-                                        renderItem(item, index: startIndex + index, selectedIndex: selectedIndex, isSingle: hasSingleOtherTab,
-                                                   canScroll: tabsShouldScroll, widthProvider: widthProvider, centeringAdjustment: singleTabCenteringAdjustment)
-                                        .onAppear {
-                                            guard tabsShouldScroll && startIndex+index == selectedIndex, let tab = item.tab else { return }
-                                            DispatchQueue.main.async {
-                                                scrollToTabIfNeeded(tab, containerGeometry: geometry, scrollViewProxy: scrollproxy)
-                                            }
-                                        }
-                                    }
-                                }
-                                .frame(maxHeight: .infinity)
-                                .background(hasUnpinnedTabs ? nil : GeometryReader { _ in
-                                    Color.clear.preference(key: CurrentTabGlobalFrameKey.self, value: .init(index: selectedIndex, frame: .zero))
-                                })
-                                .onAppear {
-                                    viewModel.singleTabCenteringAdjustment = singleTabCenteringAdjustment
-                                    guard tabsShouldScroll, let currentTab = currentTab, !currentTab.isPinned else { return }
-                                    scrollToTabIfNeeded(currentTab, containerGeometry: geometry, scrollViewProxy: scrollproxy, animated: false)
-                                }
-                                .onChange(of: singleTabCenteringAdjustment) { newValue in
-                                    viewModel.singleTabCenteringAdjustment = newValue
-                                }
-                            }
-                        }
-                        .if(tabsShouldScroll) {
-                            $0.mask(scrollMask)
-                                .overlay(sections.pinnedItems.count == 0 ? separator : nil, alignment: .leading)
-                                .overlay(separator, alignment: .trailing)
-                        }
-                        .onHover { h in
-                            guard !h else { return }
-                            hoveredIndex = nil
-                        }
-                        .frame(maxWidth: .infinity)
-                    }
-                }
-                // Dragged Item over
-                draggedItem
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-//            .background(// use this to debug the draggable area
-//                Path(draggableContentPath(geometry: geometry)).stroke(Color.red)
-//            )
-            .contentShape(
-                // limit the drag gesture space
-                Path(draggableContentPath(geometry: geometry))
-            )
-            .simultaneousGesture(
-                // Restore original gesture system for basic functionality
-                disableDragGesture ? nil :
-                    DragGesture(minimumDistance: 1)
-                    .onChanged {
-                        let gestureValue = TabGestureValue(startLocation: $0.startLocation, location: $0.location, time: $0.time)
-                        dragGestureOnChange(gestureValue: gestureValue, containerGeometry: geometry)
-                    }
-                    .onEnded {
-                        let gestureValue = TabGestureValue(startLocation: $0.startLocation, location: $0.location, time: $0.time)
-                        dragGestureOnEnded(gestureValue: gestureValue)
-                    }
-            )
-            .onDrop(of: [UTType.beamBrowserTab, UTType.beamTabGroup], delegate: TabsExternalDropDelegate(withHandler: self, containerGeometry: geometry))
-            .onAppear {
-                startOtherMouseDownMonitor()
-                externalDragModel.setup(withState: state, tabsMananger: browserTabsManager)
-                updateDraggableTabsAreas(with: geometry, tabsSections: sections, widthProvider: widthProvider, singleTabFrame: viewModel.singleTabCurrentFrame, lastItemFrame: viewModel.lastItemCurrentFrame)
-                contextMenuManager.setup(withState: state)
-                print("✅ Original tab system restored")
-            }
-            .onDisappear {
-                removeMouseMonitors()
-                updateDraggableTabsAreas(with: nil, tabsSections: sections, widthProvider: widthProvider)
-            }
-            .onPreferenceChangeDebounced(CurrentTabGlobalFrameKey.self, delay: .milliseconds(500)) { [weak state] newValue in
-                currentTabFrameDidChange(newValue: newValue, state: state, hasUnpinnedTabs: hasUnpinnedTabs,
-                                         geometry: geometry, widthProvider: widthProvider)
-            }
-            .onPreferenceChangeDebounced(SingleTabGlobalFrameKey.self, delay: .milliseconds(500)) { newValue in
-                importantTabFrameDidChange(newValue: newValue, isSingle: true, geometry: geometry, widthProvider: widthProvider)
-            }
-            .onPreferenceChangeDebounced(LastTabGlobalFrameKey.self, delay: .milliseconds(500)) { newValue in
-                importantTabFrameDidChange(newValue: newValue, isLast: true, geometry: geometry, widthProvider: widthProvider)
-            }
-            .onChange(of: widthProvider.computedFixedWidths) { _ in
-                guard browserTabsManager.currentTabUIFrame == .zero else { return }
-                updateDraggableTabsAreas(with: nil, tabsSections: sections, widthProvider: widthProvider)
-            }
-            .onChange(of: sections.allItems.count) { _ in
-                if sections.unpinnedItems.count <= 1 {
-                    updateDraggableTabsAreas(with: nil, tabsSections: sections, widthProvider: widthProvider)
-                }
-                guard hoveredIndex != nil else { return }
-                isChangingTabsCountWhileHovering = true
-                startTrackingMouseMove()
-            }
-        }
+        ModernTabBarInline()
     }
 
 }
